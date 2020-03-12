@@ -53,6 +53,8 @@ namespace {
 
         void HandleStaticMethod(const std::string& method_name, EncodableMap& params,
             const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result);
+        void HandleAgoraRtmClientMethod(const std::string& method_name, EncodableMap& params,
+            const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result);
     };
 
     // static
@@ -94,6 +96,8 @@ namespace {
 
         if ("static" == callType)
             HandleStaticMethod(methodName, params, result);
+    	else if ("AgoraRtmClient" == callType)
+            HandleAgoraRtmClientMethod(methodName, params, result);
         else
             result->NotImplemented();
     }
@@ -105,10 +109,10 @@ namespace {
         {
             if (params.count(EncodableValue("appId")) == 0)
             {
-	            auto value = EncodableValue(EncodableMap{
+	            auto ret = EncodableValue(EncodableMap{
 		            {EncodableValue("errorCode"), EncodableValue(-1)},
 	            });
-                result->Success(&value);
+                result->Success(&ret);
                 return;
             }
             auto appId = params[EncodableValue("appId")].StringValue();
@@ -117,13 +121,51 @@ namespace {
                 nextClientIndex++;
 
             auto rtmClient = new RTMClient(appId, nextClientIndex, registrar->messenger());
-            auto value = EncodableValue(EncodableMap{
+            auto ret = EncodableValue(EncodableMap{
 	            {EncodableValue("errorCode"), EncodableValue(0)},
 	            {EncodableValue("index"), EncodableValue(nextClientIndex)},
             });
-            result->Success(&value);
+            result->Success(&ret);
             agoraClients[nextClientIndex] = rtmClient;
             nextClientIndex++;
+        }
+        else
+            result->NotImplemented();
+    }
+
+    void AgoraRtmPlugin::HandleAgoraRtmClientMethod(const std::string& method_name, EncodableMap& params,
+        const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result)
+    {
+        auto clientIndex = params[EncodableValue("clientIndex")].IntValue();
+        auto args = params[EncodableValue("args")].MapValue();
+
+        if (agoraClients.count(clientIndex) == 0)
+        {
+	        auto ret = EncodableValue(EncodableMap{
+		        {EncodableValue("errorCode"), EncodableValue(-1)},
+	        });
+            result->Success(&ret);
+            return;
+        }
+        auto rtmClient = agoraClients[clientIndex];
+
+        if ("login" == method_name)
+        {
+            auto token = args.count(EncodableValue("token")) > 0 ? args[EncodableValue("token")].StringValue() : "";
+            auto userId = args[EncodableValue("userId")].StringValue();
+            auto errorCode = rtmClient->rtmService->login(token.c_str(), userId.c_str());
+            auto ret = EncodableValue(EncodableMap{
+	            {EncodableValue("errorCode"), EncodableValue(errorCode)},
+            });
+            result->Success(&ret);
+        }
+        else if ("logout" == method_name)
+        {
+	        auto errorCode = rtmClient->rtmService->logout();
+	        auto ret = EncodableValue(EncodableMap{
+		        {EncodableValue("errorCode"), EncodableValue(errorCode)},
+	        });
+            result->Success(&ret);
         }
         else
             result->NotImplemented();
