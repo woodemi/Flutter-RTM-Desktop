@@ -30,6 +30,8 @@ public class AgoraRtmPlugin: NSObject, FlutterPlugin {
     switch callType {
     case "static":
       handleStaticMethod(methodName, params: params, result: result)
+    case "AgoraRtmClient":
+      handleAgoraRtmClientMethod(methodName, params: params, result: result)
     default:
       result(["errorCode": -2, "reason": FlutterMethodNotImplemented])
     }
@@ -54,6 +56,30 @@ public class AgoraRtmPlugin: NSObject, FlutterPlugin {
       agoraClients[nextClientIndex] = rtmClient
       result(["errorCode": 0, "index": nextClientIndex])
       nextClientIndex += 1
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  private func handleAgoraRtmClientMethod(_ name: String, params: [String: Any], result: @escaping FlutterResult) {
+    guard let clientIndex = params["clientIndex"] as? Int,
+          let args = params["args"] as? Dictionary<String, Any>,
+          let rtmClient = agoraClients[clientIndex] else {
+      result(["errorCode": -1])
+      return
+    }
+
+    switch name {
+    case "login":
+      let token = args["token"] as! String?
+      let userId = args["userId"] as! String
+      rtmClient.kit.login(byToken: token, user: userId) { errorCode in
+        result(["errorCode": errorCode])
+      }
+    case "logout":
+      rtmClient.kit.logout { errorCode in
+        result(["errorCode": errorCode])
+      }
     default:
       result(FlutterMethodNotImplemented)
     }
