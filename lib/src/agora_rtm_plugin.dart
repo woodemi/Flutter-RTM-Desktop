@@ -13,4 +13,8 @@ mixin AgoraRtmPlugin {
   static Future<dynamic> callMethodForStatic(String name, Map arguments) {
     return _sendMethodMessage("static", name, arguments);
   }
+
+  static Future<dynamic> callMethodForClient(String name, Map arguments) {
+    return _sendMethodMessage("AgoraRtmClient", name, arguments);
+  }
 }

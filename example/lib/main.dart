@@ -11,6 +11,11 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  bool _isLogin = false;
+  bool _isInChannel = false;
+
+  final _userNameController = TextEditingController();
+
   final _infoStrings = <String>[];
 
   AgoraRtmClient _client;
@@ -32,6 +37,7 @@ class _MyAppState extends State<MyApp> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              _buildLogin(),
               _buildInfoList(),
             ],
           ),
@@ -47,7 +53,33 @@ class _MyAppState extends State<MyApp> {
           state.toString() +
           ', reason: ' +
           reason.toString());
+      if (state == 5) {
+        _client.logout();
+        _log('Logout.');
+        setState(() {
+          _isLogin = false;
+        });
+      }
     };
+  }
+
+  static TextStyle textStyle = TextStyle(fontSize: 18, color: Colors.blue);
+
+  Widget _buildLogin() {
+    return Row(children: <Widget>[
+      _isLogin
+          ? new Expanded(
+              child: new Text('User Id: ' + _userNameController.text,
+                  style: textStyle))
+          : new Expanded(
+              child: new TextField(
+                  controller: _userNameController,
+                  decoration: InputDecoration(hintText: 'Input your user id'))),
+      new OutlineButton(
+        child: Text(_isLogin ? 'Logout' : 'Login', style: textStyle),
+        onPressed: _toggleLogin,
+      )
+    ]);
   }
 
   Widget _buildInfoList() {
@@ -63,6 +95,38 @@ class _MyAppState extends State<MyApp> {
       },
       itemCount: _infoStrings.length,
     )));
+  }
+
+  void _toggleLogin() async {
+    if (_isLogin) {
+      try {
+        await _client.logout();
+        _log('Logout success.');
+
+        setState(() {
+          _isLogin = false;
+          _isInChannel = false;
+        });
+      } catch (errorCode) {
+        _log('Logout error: ' + errorCode.toString());
+      }
+    } else {
+      String userId = _userNameController.text;
+      if (userId.isEmpty) {
+        _log('Please input your user id to login.');
+        return;
+      }
+
+      try {
+        await _client.login(null, userId);
+        _log('Login success: ' + userId);
+        setState(() {
+          _isLogin = true;
+        });
+      } catch (errorCode) {
+        _log('Login error: ' + errorCode.toString());
+      }
+    }
   }
 
   void _log(String info) {
