@@ -18,5 +18,18 @@ namespace agora::rtm
 		virtual ~RTMClient();
 
 		IRtmService* rtmService;
+
+#pragma region IRtmServiceEventHandler
+		void onConnectionStateChanged(CONNECTION_STATE state, CONNECTION_CHANGE_REASON reason) override;
+#pragma endregion
+
+	private:
+		std::unique_ptr<flutter::BasicMessageChannel<EncodableValue>> messageChannel;
+
+		void SendClientEvent(std::string name, EncodableMap params)
+		{
+			params[EncodableValue("event")] = name;
+			messageChannel->Send(EncodableValue(params));
+		}
 	};
 }

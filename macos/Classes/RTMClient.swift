@@ -1,4 +1,5 @@
 import FlutterMacOS
+import FlutterMacOS
 import AgoraRtmKit
 
 class RTMClient: NSObject {
