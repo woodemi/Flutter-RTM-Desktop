@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
+import 'agora_rtm_channel.dart';
 import 'agora_rtm_plugin.dart';
 
 class AgoraRtmClientException implements Exception {
@@ -52,6 +53,8 @@ class AgoraRtmClient {
 
   /// Occurs when you receive error events.
   void Function() onError;
+
+  var _channels = <String, AgoraRtmChannel>{};
 
   bool _closed;
 
@@ -112,5 +115,37 @@ class AgoraRtmClient {
     if (res["errorCode"] != 0)
       throw AgoraRtmClientException(
           "logout failed errorCode:${res['errorCode']}", res['errorCode']);
+  }
+
+  /// Creates an [AgoraRtmChannel].
+  ///
+  /// channelId is the unique channel name of the Agora RTM session. The string length must not exceed 64 bytes with the following character scope:
+  /// - The 26 lowercase English letters: a to z
+  /// - The 26 uppercase English letters: A to Z
+  /// - The 10 numbers: 0 to 9
+  /// - Space
+  /// - "!", "#", "$", "%", "&", "(", ")", "+", "-", ":", ";", "<", "=", ".", ">", "?", "@", "]", "[", "^", "_", " {", "}", "|", "~", ","
+  /// channelId cannot be empty or set as nil.
+  Future<AgoraRtmChannel> createChannel(String channelId) async {
+    final res = await _callNative("createChannel", {'channelId': channelId});
+    if (res['errorCode'] != 0)
+      throw AgoraRtmClientException(
+          "createChannel failed errorCode:${res['errorCode']}",
+          res['errorCode']);
+    AgoraRtmChannel channel = AgoraRtmChannel(_clientIndex, channelId);
+    _channels[channelId] = channel;
+    return _channels[channelId];
+  }
+
+  /// Releases an [AgoraRtmChannel].
+  Future<void> releaseChannel(String channelId) async {
+    final res = await _callNative("releaseChannel", {'channelId': channelId});
+    if (res['errorCode'] != 0)
+      throw AgoraRtmClientException(
+          "releaseChannel failed errorCode:${res['errorCode']}",
+          res['errorCode']);
+    _channels[channelId]?.close();
+    _channels.removeWhere((String channelId, AgoraRtmChannel channel) =>
+        [channelId].contains(channel));
   }
 }

@@ -32,6 +32,8 @@ public class AgoraRtmPlugin: NSObject, FlutterPlugin {
       handleStaticMethod(methodName, params: params, result: result)
     case "AgoraRtmClient":
       handleAgoraRtmClientMethod(methodName, params: params, result: result)
+    case "AgoraRtmChannel":
+      handleAgoraRtmChannelMethod(methodName, params: params, result: result)
     default:
       result(["errorCode": -2, "reason": FlutterMethodNotImplemented])
     }
@@ -80,8 +82,40 @@ public class AgoraRtmPlugin: NSObject, FlutterPlugin {
       rtmClient.kit.logout { errorCode in
         result(["errorCode": errorCode])
       }
+    case "createChannel":
+      let channelId = args["channelId"] as! String
+      guard let rtmChannel = RTMChannel.create(clientIndex, channelId: channelId, messenger: messenger, kit: rtmClient.kit) else {
+        result(["errorCode": -1])
+        return
+      }
+      rtmClient.channels[channelId] = rtmChannel
+      result(["errorCode": 0])
     default:
       result(FlutterMethodNotImplemented)
+    }
+  }
+
+  private func handleAgoraRtmChannelMethod(_ name: String, params: [String: Any], result: @escaping FlutterResult) {
+    guard let clientIndex = params["clientIndex"] as? Int,
+          let channelId = params["channelId"] as? String,
+          let args = params["args"] as? Dictionary<String, Any>,
+          let rtmClient = agoraClients[clientIndex],
+          let rtmChannel = rtmClient.channels[channelId] else {
+      result(["errorCode": -1])
+      return
+    }
+
+    switch name {
+    case "join":
+      rtmChannel.channel.join { errorCode in
+        result(["errorCode": errorCode])
+      }
+    case "leave":
+      rtmChannel.channel.leave { errorCode in
+        result(["errorCode": errorCode])
+      }
+    default:
+      result(["errorCode": -2, "reason": FlutterMethodNotImplemented])
     }
   }
 }

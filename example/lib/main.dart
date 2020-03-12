@@ -15,10 +15,13 @@ class _MyAppState extends State<MyApp> {
   bool _isInChannel = false;
 
   final _userNameController = TextEditingController();
+  final _channelNameController = TextEditingController();
+  final _channelMessageController = TextEditingController();
 
   final _infoStrings = <String>[];
 
   AgoraRtmClient _client;
+  AgoraRtmChannel _channel;
 
   @override
   void initState() {
@@ -38,6 +41,7 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             children: [
               _buildLogin(),
+              _buildJoinChannel(),
               _buildInfoList(),
             ],
           ),
@@ -63,6 +67,11 @@ class _MyAppState extends State<MyApp> {
     };
   }
 
+  Future<AgoraRtmChannel> _createChannel(String name) async {
+    AgoraRtmChannel channel = await _client.createChannel(name);
+    return channel;
+  }
+
   static TextStyle textStyle = TextStyle(fontSize: 18, color: Colors.blue);
 
   Widget _buildLogin() {
@@ -78,6 +87,27 @@ class _MyAppState extends State<MyApp> {
       new OutlineButton(
         child: Text(_isLogin ? 'Logout' : 'Login', style: textStyle),
         onPressed: _toggleLogin,
+      )
+    ]);
+  }
+
+  Widget _buildJoinChannel() {
+    if (!_isLogin) {
+      return Container();
+    }
+    return Row(children: <Widget>[
+      _isInChannel
+          ? new Expanded(
+              child: new Text('Channel: ' + _channelNameController.text,
+                  style: textStyle))
+          : new Expanded(
+              child: new TextField(
+                  controller: _channelNameController,
+                  decoration: InputDecoration(hintText: 'Input channel id'))),
+      new OutlineButton(
+        child: Text(_isInChannel ? 'Leave Channel' : 'Join Channel',
+            style: textStyle),
+        onPressed: _toggleJoinChannel,
       )
     ]);
   }
@@ -125,6 +155,41 @@ class _MyAppState extends State<MyApp> {
         });
       } catch (errorCode) {
         _log('Login error: ' + errorCode.toString());
+      }
+    }
+  }
+
+  void _toggleJoinChannel() async {
+    if (_isInChannel) {
+      try {
+        await _channel.leave();
+        _log('Leave channel success.');
+        _client.releaseChannel(_channel.channelId);
+        _channelMessageController.text = null;
+
+        setState(() {
+          _isInChannel = false;
+        });
+      } catch (errorCode) {
+        _log('Leave channel error: ' + errorCode.toString());
+      }
+    } else {
+      String channelId = _channelNameController.text;
+      if (channelId.isEmpty) {
+        _log('Please input channel id to join.');
+        return;
+      }
+
+      try {
+        _channel = await _createChannel(channelId);
+        await _channel.join();
+        _log('Join channel success.');
+
+        setState(() {
+          _isInChannel = true;
+        });
+      } catch (errorCode) {
+        _log('Join channel error: ' + errorCode.toString());
       }
     }
   }

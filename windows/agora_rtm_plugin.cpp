@@ -55,6 +55,8 @@ namespace {
             const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result);
         void HandleAgoraRtmClientMethod(const std::string& method_name, EncodableMap& params,
             const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result);
+        void HandleAgoraRtmChannelMethod(const std::string& method_name, EncodableMap& params,
+            const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result);
     };
 
     // static
@@ -98,6 +100,8 @@ namespace {
             HandleStaticMethod(methodName, params, result);
     	else if ("AgoraRtmClient" == callType)
             HandleAgoraRtmClientMethod(methodName, params, result);
+        else if ("AgoraRtmChannel" == callType)
+            HandleAgoraRtmChannelMethod(methodName, params, result);
         else
             result->NotImplemented();
     }
@@ -165,6 +169,43 @@ namespace {
 	        auto ret = EncodableValue(EncodableMap{
 		        {EncodableValue("errorCode"), EncodableValue(errorCode)},
 	        });
+            result->Success(&ret);
+        }
+        else
+            result->NotImplemented();
+    }
+
+    void AgoraRtmPlugin::HandleAgoraRtmChannelMethod(const std::string& method_name, EncodableMap& params,
+        const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result)
+    {
+        auto clientIndex = params[EncodableValue("clientIndex")].IntValue();
+        auto channelId = params[EncodableValue("channelId")].StringValue();
+        auto args = params[EncodableValue("args")].MapValue();
+        auto rtmClient = agoraClients[clientIndex];
+
+        if (rtmClient->channels.count(channelId) == 0)
+        {
+	        auto ret = EncodableValue(EncodableMap{
+		        {EncodableValue("errorCode"), EncodableValue(-1)},
+	        });
+            result->Success(&ret);
+        }
+        auto rtmChannel = rtmClient->channels[channelId];
+
+        if ("join" == method_name)
+        {
+	        auto errorCode = rtmChannel->channel->join();
+            auto ret = EncodableValue(EncodableMap{
+                {EncodableValue("errorCode"), EncodableValue(errorCode)},
+            });
+            result->Success(&ret);
+        }
+        else if ("leave" == method_name)
+        {
+	        auto errorCode = rtmChannel->channel->leave();
+            auto ret = EncodableValue(EncodableMap{
+                {EncodableValue("errorCode"), EncodableValue(errorCode)},
+            });
             result->Success(&ret);
         }
         else

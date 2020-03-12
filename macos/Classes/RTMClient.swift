@@ -5,6 +5,8 @@ import AgoraRtmKit
 class RTMClient: NSObject {
     public var kit: AgoraRtmKit!
 
+    public var channels = Dictionary<String, RTMChannel>()
+
     private var messageChannel: FlutterBasicMessageChannel!
 
     static func create(appId: String, clientIndex: Int, messenger: FlutterBinaryMessenger) -> RTMClient? {

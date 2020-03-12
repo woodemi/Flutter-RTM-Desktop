@@ -4,6 +4,7 @@
 #include <flutter/encodable_value.h>
 
 #include "IAgoraRtmService.h"
+#include "RTMChannel.h"
 
 namespace agora::rtm
 {
@@ -18,6 +19,8 @@ namespace agora::rtm
 		virtual ~RTMClient();
 
 		IRtmService* rtmService;
+
+		std::map<std::string, RTMChannel*> channels{};
 
 #pragma region IRtmServiceEventHandler
 		void onConnectionStateChanged(CONNECTION_STATE state, CONNECTION_CHANGE_REASON reason) override;
