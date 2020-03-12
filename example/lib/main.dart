@@ -11,6 +11,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final _infoStrings = <String>[];
+
   AgoraRtmClient _client;
 
   @override
@@ -28,8 +30,10 @@ class _MyAppState extends State<MyApp> {
         ),
         body: Container(
           padding: const EdgeInsets.all(16),
-          child: Center(
-            child: Text('TODO'),
+          child: Column(
+            children: [
+              _buildInfoList(),
+            ],
           ),
         ),
       ),
@@ -38,5 +42,33 @@ class _MyAppState extends State<MyApp> {
 
   void _createClient() async {
     _client = await AgoraRtmClient.createInstance(agoraAppId);
+    _client.onConnectionStateChanged = (int state, int reason) {
+      _log('Connection state changed: ' +
+          state.toString() +
+          ', reason: ' +
+          reason.toString());
+    };
+  }
+
+  Widget _buildInfoList() {
+    return Expanded(
+        child: Container(
+            child: ListView.builder(
+      itemExtent: 24,
+      itemBuilder: (context, i) {
+        return ListTile(
+          contentPadding: const EdgeInsets.all(0.0),
+          title: Text(_infoStrings[i]),
+        );
+      },
+      itemCount: _infoStrings.length,
+    )));
+  }
+
+  void _log(String info) {
+    print(info);
+    setState(() {
+      _infoStrings.insert(0, info);
+    });
   }
 }
