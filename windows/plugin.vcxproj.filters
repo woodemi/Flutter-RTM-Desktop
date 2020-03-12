@@ -25,7 +25,10 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="$(FlutterPluginName)_plugin.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RTMClient.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -41,5 +44,11 @@
     <ClCompile Include="$(FlutterPluginName)_plugin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RTMClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="sdk\dll\agora_rtm_sdk.dll" />
   </ItemGroup>
 </Project>

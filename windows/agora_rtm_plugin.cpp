@@ -16,93 +16,130 @@
 // This must be included before VersionHelpers.h.
 #include <windows.h>
 
-#include <VersionHelpers.h>
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
 
 #include <map>
 #include <memory>
-#include <sstream>
+
+#include "RTMClient.h"
+
+using namespace agora::rtm;
 
 namespace {
+    using flutter::EncodableMap;
+    using flutter::EncodableValue;
 
-// *** Rename this class to match the windows pluginClass in your pubspec.yaml.
-class AgoraRtmPlugin : public flutter::Plugin {
- public:
-  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar);
+    class AgoraRtmPlugin : public flutter::Plugin
+    {
+    public:
+        static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar);
 
-  AgoraRtmPlugin();
+        AgoraRtmPlugin(flutter::PluginRegistrarWindows* registrar);
 
-  virtual ~AgoraRtmPlugin();
+        virtual ~AgoraRtmPlugin();
 
- private:
-  // Called when a method is called on this plugin's channel from Dart.
-  void HandleMethodCall(
-      const flutter::MethodCall<flutter::EncodableValue> &method_call,
-      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
-};
+    private:
+        // Called when a method is called on this plugin's channel from Dart.
+        void HandleMethodCall(
+            const flutter::MethodCall<flutter::EncodableValue>& method_call,
+            std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
-// static
-void AgoraRtmPlugin::RegisterWithRegistrar(
-    flutter::PluginRegistrarWindows *registrar) {
-  auto channel =
-      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          registrar->messenger(), "agora_rtm",
-          &flutter::StandardMethodCodec::GetInstance());
+        flutter::PluginRegistrarWindows* registrar;
 
-  auto plugin = std::make_unique<AgoraRtmPlugin>();
+        long nextClientIndex{ 0 };
+        std::map<long, RTMClient*> agoraClients{};
 
-  channel->SetMethodCallHandler(
-      [plugin_pointer = plugin.get()](const auto &call, auto result) {
-        plugin_pointer->HandleMethodCall(call, std::move(result));
-      });
+        void HandleStaticMethod(const std::string& method_name, EncodableMap& params,
+            const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result);
+    };
 
-  registrar->AddPlugin(std::move(plugin));
-}
+    // static
+    void AgoraRtmPlugin::RegisterWithRegistrar(
+        flutter::PluginRegistrarWindows* registrar)
+    {
+        auto plugin = std::make_unique<AgoraRtmPlugin>(registrar);
 
-AgoraRtmPlugin::AgoraRtmPlugin() {}
+        auto channel =
+            std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+                registrar->messenger(), "io.agora.rtm",
+                &flutter::StandardMethodCodec::GetInstance());
 
-AgoraRtmPlugin::~AgoraRtmPlugin() {}
+        channel->SetMethodCallHandler(
+            [plugin_pointer = plugin.get()](const auto& call, auto result) {
+            plugin_pointer->HandleMethodCall(call, std::move(result));
+        });
 
-void AgoraRtmPlugin::HandleMethodCall(
-    const flutter::MethodCall<flutter::EncodableValue> &method_call,
-    std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
-  // *** Replace the "getPlatformVersion" check with your plugin's method names.
-  // See:
-  // https://github.com/flutter/engine/tree/master/shell/platform/common/cpp/client_wrapper/include/flutter
-  // and
-  // https://github.com/flutter/engine/tree/master/shell/platform/windows/client_wrapper/include/flutter
-  // for the relevant Flutter APIs.
-  if (method_call.method_name().compare("getPlatformVersion") == 0) {
-    std::ostringstream version_stream;
-    version_stream << "Windows ";
-    // The result returned here will depend on the app manifest of the runner.
-    if (IsWindows10OrGreater()) {
-      version_stream << "10+";
-    } else if (IsWindows8OrGreater()) {
-      version_stream << "8";
-    } else if (IsWindows7OrGreater()) {
-      version_stream << "7";
+        registrar->AddPlugin(std::move(plugin));
     }
-    flutter::EncodableValue response(version_stream.str());
-    result->Success(&response);
-  } else {
-    result->NotImplemented();
-  }
-}
 
+    AgoraRtmPlugin::AgoraRtmPlugin(flutter::PluginRegistrarWindows* registrar) : registrar(registrar) {}
+
+    AgoraRtmPlugin::~AgoraRtmPlugin()
+    {
+        for (auto clientPair : agoraClients)
+            delete clientPair.second;
+        agoraClients.clear();
+    }
+
+    void AgoraRtmPlugin::HandleMethodCall(
+        const flutter::MethodCall<flutter::EncodableValue>& method_call,
+        std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result)
+    {
+        auto methodName = method_call.method_name();
+        auto arguments = method_call.arguments()->MapValue();
+        auto callType = arguments[EncodableValue("call")].StringValue();
+        auto params = arguments[EncodableValue("params")].MapValue();
+
+        if ("static" == callType)
+            HandleStaticMethod(methodName, params, result);
+        else
+            result->NotImplemented();
+    }
+
+    void AgoraRtmPlugin::HandleStaticMethod(const std::string& method_name, EncodableMap& params,
+        const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result)
+    {
+        if ("createInstance" == method_name)
+        {
+            if (params.count(EncodableValue("appId")) == 0)
+            {
+	            auto value = EncodableValue(EncodableMap{
+		            {EncodableValue("errorCode"), EncodableValue(-1)},
+	            });
+                result->Success(&value);
+                return;
+            }
+            auto appId = params[EncodableValue("appId")].StringValue();
+
+            while (agoraClients.count(nextClientIndex) > 0)
+                nextClientIndex++;
+
+            auto rtmClient = new RTMClient(appId, nextClientIndex, registrar->messenger());
+            auto value = EncodableValue(EncodableMap{
+	            {EncodableValue("errorCode"), EncodableValue(0)},
+	            {EncodableValue("index"), EncodableValue(nextClientIndex)},
+            });
+            result->Success(&value);
+            agoraClients[nextClientIndex] = rtmClient;
+            nextClientIndex++;
+        }
+        else
+            result->NotImplemented();
+    }
 }  // namespace
 
 void AgoraRtmPluginRegisterWithRegistrar(
-    FlutterDesktopPluginRegistrarRef registrar) {
-  // The plugin registrar wrappers owns the plugins, registered callbacks, etc.,
-  // so must remain valid for the life of the application.
-  static auto *plugin_registrars =
-      new std::map<FlutterDesktopPluginRegistrarRef,
-                   std::unique_ptr<flutter::PluginRegistrarWindows>>;
-  auto insert_result = plugin_registrars->emplace(
-      registrar, std::make_unique<flutter::PluginRegistrarWindows>(registrar));
+    FlutterDesktopPluginRegistrarRef registrar)
+{
+    // The plugin registrar wrappers owns the plugins, registered callbacks, etc.,
+    // so must remain valid for the life of the application.
+    static auto* plugin_registrars =
+        new std::map<FlutterDesktopPluginRegistrarRef,
+        std::unique_ptr<flutter::PluginRegistrarWindows>>;
+    auto insert_result = plugin_registrars->emplace(
+        registrar, std::make_unique<flutter::PluginRegistrarWindows>(registrar));
 
-  AgoraRtmPlugin::RegisterWithRegistrar(insert_result.first->second.get());
+    AgoraRtmPlugin::RegisterWithRegistrar(insert_result.first->second.get());
 }
