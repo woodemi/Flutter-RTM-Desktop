@@ -42,6 +42,7 @@ class _MyAppState extends State<MyApp> {
             children: [
               _buildLogin(),
               _buildJoinChannel(),
+              _buildSendChannelMessage(),
               _buildInfoList(),
             ],
           ),
@@ -69,6 +70,10 @@ class _MyAppState extends State<MyApp> {
 
   Future<AgoraRtmChannel> _createChannel(String name) async {
     AgoraRtmChannel channel = await _client.createChannel(name);
+    channel.onMessageReceived =
+        (AgoraRtmMessage message, AgoraRtmMember member) {
+      _log("Channel msg: " + member.userId + ", msg: " + message.text);
+    };
     return channel;
   }
 
@@ -108,6 +113,22 @@ class _MyAppState extends State<MyApp> {
         child: Text(_isInChannel ? 'Leave Channel' : 'Join Channel',
             style: textStyle),
         onPressed: _toggleJoinChannel,
+      )
+    ]);
+  }
+
+  Widget _buildSendChannelMessage() {
+    if (!_isLogin || !_isInChannel) {
+      return Container();
+    }
+    return Row(children: <Widget>[
+      new Expanded(
+          child: new TextField(
+              controller: _channelMessageController,
+              decoration: InputDecoration(hintText: 'Input channel message'))),
+      new OutlineButton(
+        child: Text('Send to Channel', style: textStyle),
+        onPressed: _toggleSendChannelMessage,
       )
     ]);
   }
@@ -191,6 +212,20 @@ class _MyAppState extends State<MyApp> {
       } catch (errorCode) {
         _log('Join channel error: ' + errorCode.toString());
       }
+    }
+  }
+
+  void _toggleSendChannelMessage() async {
+    String text = _channelMessageController.text;
+    if (text.isEmpty) {
+      _log('Please input text to send.');
+      return;
+    }
+    try {
+      await _channel.sendMessage(AgoraRtmMessage.fromText(text));
+      _log('Send channel message success.');
+    } catch (errorCode) {
+      _log('Send channel message error: ' + errorCode.toString());
     }
   }
 

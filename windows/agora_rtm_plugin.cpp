@@ -200,6 +200,18 @@ namespace {
             });
             result->Success(&ret);
         }
+        else if ("sendMessage" == method_name)
+        {
+            auto message = args[EncodableValue("message")].StringValue();
+            auto rtmMessage = rtmClient->rtmService->createMessage();
+            rtmMessage->setText(message.c_str());
+            auto errorCode = rtmChannel->channel->sendMessage(rtmMessage);
+            rtmMessage->release();
+            auto ret = EncodableValue(EncodableMap{
+                {EncodableValue("errorCode"), EncodableValue(errorCode)},
+            });
+            result->Success(&ret);
+        }
         else if ("leave" == method_name)
         {
 	        auto errorCode = rtmChannel->channel->leave();

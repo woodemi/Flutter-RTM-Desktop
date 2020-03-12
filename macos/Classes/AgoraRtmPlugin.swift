@@ -110,6 +110,11 @@ public class AgoraRtmPlugin: NSObject, FlutterPlugin {
       rtmChannel.channel.join { errorCode in
         result(["errorCode": errorCode])
       }
+    case "sendMessage":
+      let message = args["message"] as! String
+      rtmChannel.channel.send(AgoraRtmMessage(text: message)) { errorCode in
+        result(["errorCode": errorCode])
+      }
     case "leave":
       rtmChannel.channel.leave { errorCode in
         result(["errorCode": errorCode])
