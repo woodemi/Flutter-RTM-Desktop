@@ -83,4 +83,34 @@ class AgoraRtmClient {
     _clientSubscription = _createEventStream(_clientIndex)
         .listen(_eventListener, onError: onError);
   }
+
+  Future<dynamic> _callNative(String methodName, dynamic arguments) {
+    return AgoraRtmPlugin.callMethodForClient(
+        methodName, {'clientIndex': _clientIndex, 'args': arguments});
+  }
+
+  /// Allows a user to log in the Agora RTM system.
+  ///
+  /// The string length of userId must be less than 64 bytes with the following character scope:
+  /// - The 26 lowercase English letters: a to z
+  /// - The 26 uppercase English letters: A to Z
+  /// - The 10 numbers: 0 to 9
+  /// - Space
+  /// - "!", "#", "$", "%", "&", "(", ")", "+", "-", ":", ";", "<", "=", ".", ">", "?", "@", "]", "[", "^", "_", " {", "}", "|", "~", ","
+  /// Do not set userId as null and do not start with a space.
+  /// If you log in with the same user ID from a different instance, you will be kicked out of your previous login and removed from previously joined channels.
+  Future login(String token, String userId) async {
+    final res = await _callNative("login", {'token': token, 'userId': userId});
+    if (res["errorCode"] != 0)
+      throw AgoraRtmClientException(
+          "login failed errorCode:${res['errorCode']}", res['errorCode']);
+  }
+
+  /// Allows a user to log out of the Agora RTM system.
+  Future logout() async {
+    final res = await _callNative("logout", null);
+    if (res["errorCode"] != 0)
+      throw AgoraRtmClientException(
+          "logout failed errorCode:${res['errorCode']}", res['errorCode']);
+  }
 }
