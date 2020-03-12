@@ -18,5 +18,18 @@ namespace agora::rtm
 		virtual ~RTMChannel();
 
 		IChannel* channel;
+
+#pragma region IRtmServiceEventHandler
+		void onMessageReceived(const char* userId, const IMessage* message) override;
+#pragma endregion
+
+	private:
+		std::unique_ptr<flutter::BasicMessageChannel<EncodableValue>> messageChannel;
+
+		void SendChannelEvent(std::string name, EncodableMap params)
+		{
+			params[EncodableValue("event")] = name;
+			messageChannel->Send(EncodableValue(params));
+		}
 	};
 }
