@@ -1,11 +1,17 @@
 PODS:
   - agora_rtm (0.0.1):
+    - AgoraRtm_macOS (= 1.2.2)
     - FlutterMacOS
+  - AgoraRtm_macOS (1.2.2)
   - FlutterMacOS (1.0.0)
 
 DEPENDENCIES:
   - agora_rtm (from `Flutter/ephemeral/.symlinks/plugins/agora_rtm/macos`)
   - FlutterMacOS (from `Flutter/ephemeral/.symlinks/flutter/darwin-x64`)
+
+SPEC REPOS:
+  trunk:
+    - AgoraRtm_macOS
 
 EXTERNAL SOURCES:
   agora_rtm:
@@ -14,7 +20,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/flutter/darwin-x64
 
 SPEC CHECKSUMS:
-  agora_rtm: d3a809c6aa0897cf8eb2598980f52184105abe6b
+  agora_rtm: f1874eee2d7e936646c86dbcd045d7fa5089f9a6
+  AgoraRtm_macOS: fab43aa22a627ceee1409c6981fca0786c7d79cf
   FlutterMacOS: 15bea8a44d2fa024068daa0140371c020b4b6ff9
 
 PODFILE CHECKSUM: d8ba9b3e9e93c62c74a660b46c6fcb09f03991a7
