@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
+
 import 'agora_rtm_plugin.dart';
+import 'utils.dart';
 
 class AgoraRtmChannelException implements Exception {
   final reason;
@@ -17,6 +20,13 @@ class AgoraRtmChannelException implements Exception {
 }
 
 class AgoraRtmChannel {
+  /// Occurs when you receive error events.
+  void Function(dynamic error) onError;
+
+  /// Occurs when receiving a channel message.
+  void Function(AgoraRtmMessage message, AgoraRtmMember fromMember)
+      onMessageReceived;
+
   final String channelId;
   final int _clientIndex;
 
@@ -24,8 +34,27 @@ class AgoraRtmChannel {
 
   StreamSubscription<dynamic> _eventSubscription;
 
+  EventChannel _addEventChannel() {
+    return new EventChannel(
+        'io.agora.rtm.client$_clientIndex.channel$channelId');
+  }
+
+  _eventListener(dynamic event) {
+    final Map<dynamic, dynamic> map = event;
+    switch (map['event']) {
+      case 'onMessageReceived':
+        AgoraRtmMessage message = AgoraRtmMessage.fromJson(map['message']);
+        AgoraRtmMember member = AgoraRtmMember.fromJson(map);
+        this?.onMessageReceived(message, member);
+        break;
+    }
+  }
+
   AgoraRtmChannel(this._clientIndex, this.channelId) {
     _closed = false;
+    _eventSubscription = _addEventChannel()
+        .receiveBroadcastStream()
+        .listen(_eventListener, onError: onError);
   }
 
   Future<dynamic> _callNative(String methodName, dynamic arguments) {
@@ -41,6 +70,13 @@ class AgoraRtmChannel {
     if (res["errorCode"] != 0)
       throw AgoraRtmChannelException(
           "join failed errorCode:${res['errorCode']}", res['errorCode']);
+  }
+
+  Future<void> sendMessage(AgoraRtmMessage message) async {
+    final res = await _callNative("sendMessage", {'message': message.text});
+    if (res["errorCode"] != 0)
+      throw AgoraRtmChannelException(
+          "sendMessage failed errorCode:${res['errorCode']}", res['errorCode']);
   }
 
   Future<void> leave() async {

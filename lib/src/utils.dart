@@ -19,3 +19,24 @@ class AgoraRtmMessage {
     return "{text: $text, ts: $ts, offline: $offline}";
   }
 }
+
+class AgoraRtmMember {
+  String userId;
+  String channelId;
+
+  AgoraRtmMember(this.userId, this.channelId);
+
+  AgoraRtmMember.fromJson(Map<dynamic, dynamic> json)
+      : userId = json['userId'],
+        channelId = json['channelId'];
+
+  Map<String, dynamic> toJson() => {
+        'userId': userId,
+        'channelId': channelId,
+      };
+
+  @override
+  String toString() {
+    return "{uid: $userId, cid: $channelId}";
+  }
+}
