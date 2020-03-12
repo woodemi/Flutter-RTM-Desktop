@@ -1,0 +1,40 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - '*'
+      - '*/*'
+      - '!master'
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'beta'
+      - run: |
+          cd /Users/runner/hostedtoolcache/flutter/1.14.6-beta/x64
+          git clean -xdf; git checkout -b dev beta;
+          flutter config --enable-macos-desktop
+          cd -
+      - run: cd example && flutter packages get && flutter build macos -v
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: warrenbuckley/Setup-Nuget@v1
+      - run: cd windows & nuget restore & echo 0 & cd ..
+        shell: cmd
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'beta'
+      - run: |
+          cd C:\hostedtoolcache\windows\flutter\1.14.6-beta\x64
+          git clean -xdf; git fetch; git checkout -b master v1.15.20
+          flutter config --enable-windows-desktop
+          cd -
+      - run: cd example; flutter packages get; flutter build windows -v
