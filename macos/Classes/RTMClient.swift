@@ -30,6 +30,6 @@ class RTMClient: NSObject {
 // MARK: - AgoraRtmDelegate
 extension RTMClient: AgoraRtmDelegate {
     func rtmKit(_ kit: AgoraRtmKit, connectionStateChanged state: AgoraRtmConnectionState, reason: AgoraRtmConnectionChangeReason) {
-        sendClientEvent("onConnectionStateChanged", params: ["state": state, "reason": reason])
+        sendClientEvent("onConnectionStateChanged", params: ["state": state.rawValue, "reason": reason.rawValue])
     }
 }

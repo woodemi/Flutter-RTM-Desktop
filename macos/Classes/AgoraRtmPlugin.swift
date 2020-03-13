@@ -65,25 +65,25 @@ public class AgoraRtmPlugin: NSObject, FlutterPlugin {
 
   private func handleAgoraRtmClientMethod(_ name: String, params: [String: Any], result: @escaping FlutterResult) {
     guard let clientIndex = params["clientIndex"] as? Int,
-          let args = params["args"] as? Dictionary<String, Any>,
           let rtmClient = agoraClients[clientIndex] else {
       result(["errorCode": -1])
       return
     }
+    let args = params["args"] as? Dictionary<String, Any>
 
     switch name {
     case "login":
-      let token = args["token"] as! String?
-      let userId = args["userId"] as! String
+      let token = args?["token"] as? String
+      let userId = args?["userId"] as! String
       rtmClient.kit.login(byToken: token, user: userId) { errorCode in
-        result(["errorCode": errorCode])
+        result(["errorCode": errorCode.rawValue])
       }
     case "logout":
       rtmClient.kit.logout { errorCode in
-        result(["errorCode": errorCode])
+        result(["errorCode": errorCode.rawValue])
       }
     case "createChannel":
-      let channelId = args["channelId"] as! String
+      let channelId = args?["channelId"] as! String
       guard let rtmChannel = RTMChannel.create(clientIndex, channelId: channelId, messenger: messenger, kit: rtmClient.kit) else {
         result(["errorCode": -1])
         return
@@ -98,29 +98,29 @@ public class AgoraRtmPlugin: NSObject, FlutterPlugin {
   private func handleAgoraRtmChannelMethod(_ name: String, params: [String: Any], result: @escaping FlutterResult) {
     guard let clientIndex = params["clientIndex"] as? Int,
           let channelId = params["channelId"] as? String,
-          let args = params["args"] as? Dictionary<String, Any>,
           let rtmClient = agoraClients[clientIndex],
           let rtmChannel = rtmClient.channels[channelId] else {
       result(["errorCode": -1])
       return
     }
+    let args = params["args"] as? Dictionary<String, Any>
 
     switch name {
     case "join":
       rtmChannel.channel.join { errorCode in
-        result(["errorCode": errorCode])
+        result(["errorCode": errorCode.rawValue])
       }
     case "sendMessage":
-      let message = args["message"] as! String
+      let message = args?["message"] as! String
       rtmChannel.channel.send(AgoraRtmMessage(text: message)) { errorCode in
-        result(["errorCode": errorCode])
+        result(["errorCode": errorCode.rawValue])
       }
     case "leave":
       rtmChannel.channel.leave { errorCode in
-        result(["errorCode": errorCode])
+        result(["errorCode": errorCode.rawValue])
       }
     default:
-      result(["errorCode": -2, "reason": FlutterMethodNotImplemented])
+      result(FlutterMethodNotImplemented)
     }
   }
 }
