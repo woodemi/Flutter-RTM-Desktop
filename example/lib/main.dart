@@ -70,6 +70,13 @@ class _MyAppState extends State<MyApp> {
 
   Future<AgoraRtmChannel> _createChannel(String name) async {
     AgoraRtmChannel channel = await _client.createChannel(name);
+    channel.onMemberJoined = (AgoraRtmMember member) {
+      _log(
+          "Member joined: " + member.userId + ', channel: ' + member.channelId);
+    };
+    channel.onMemberLeft = (AgoraRtmMember member) {
+      _log("Member left: " + member.userId + ', channel: ' + member.channelId);
+    };
     channel.onMessageReceived =
         (AgoraRtmMessage message, AgoraRtmMember member) {
       _log("Channel msg: " + member.userId + ", msg: " + message.text);
