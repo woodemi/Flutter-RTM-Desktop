@@ -25,6 +25,14 @@ class RTMChannel: NSObject {
 }
 
 extension RTMChannel: AgoraRtmChannelDelegate {
+    func channel(_ channel: AgoraRtmChannel, memberJoined member: AgoraRtmMember) {
+        sendClientEvent("onMemberJoined", params: ["userId": member.userId, "channelId": member.channelId])
+    }
+
+    func channel(_ channel: AgoraRtmChannel, memberLeft member: AgoraRtmMember) {
+        sendClientEvent("onMemberLeft", params: ["userId": member.userId, "channelId": member.channelId])
+    }
+
     func channel(_ channel: AgoraRtmChannel, messageReceived message: AgoraRtmMessage, from member: AgoraRtmMember) {
         sendClientEvent("onMessageReceived", params: [
             "userId": member.userId,
