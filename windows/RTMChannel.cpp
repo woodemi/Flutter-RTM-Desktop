@@ -21,6 +21,22 @@ namespace agora::rtm
 		channel = nullptr;
 	}
 
+	void RTMChannel::onMemberJoined(IChannelMember* member)
+	{
+		SendChannelEvent("onMemberJoined", EncodableMap{
+			{EncodableValue("userId"), EncodableValue(member->getUserId())},
+			{EncodableValue("channelId"), EncodableValue(member->getChannelId())},
+		});
+	}
+
+	void RTMChannel::onMemberLeft(IChannelMember* member)
+	{
+		SendChannelEvent("onMemberLeft", EncodableMap{
+			{EncodableValue("userId"), EncodableValue(member->getUserId())},
+			{EncodableValue("channelId"), EncodableValue(member->getChannelId())},
+		});
+	}
+
 	void RTMChannel::onMessageReceived(const char* userId, const IMessage* message)
 	{
 		SendChannelEvent("onMessageReceived", EncodableMap{

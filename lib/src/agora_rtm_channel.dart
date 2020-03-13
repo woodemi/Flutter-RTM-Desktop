@@ -27,6 +27,12 @@ class AgoraRtmChannel {
   void Function(AgoraRtmMessage message, AgoraRtmMember fromMember)
       onMessageReceived;
 
+  /// Occurs when a user joins the channel.
+  void Function(AgoraRtmMember member) onMemberJoined;
+
+  /// Occurs when a channel member leaves the channel.
+  void Function(AgoraRtmMember member) onMemberLeft;
+
   final String channelId;
   final int _clientIndex;
 
@@ -47,6 +53,13 @@ class AgoraRtmChannel {
         AgoraRtmMember member = AgoraRtmMember.fromJson(map);
         this?.onMessageReceived(message, member);
         break;
+      case 'onMemberJoined':
+        AgoraRtmMember member = AgoraRtmMember.fromJson(map);
+        this?.onMemberJoined(member);
+        break;
+      case 'onMemberLeft':
+        AgoraRtmMember member = AgoraRtmMember.fromJson(map);
+        this?.onMemberLeft(member);
     }
   }
 
