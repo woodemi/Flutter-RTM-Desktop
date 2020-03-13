@@ -20,6 +20,8 @@ namespace agora::rtm
 		IChannel* channel;
 
 #pragma region IRtmServiceEventHandler
+		void onMemberJoined(IChannelMember* member) override;
+		void onMemberLeft(IChannelMember* member) override;
 		void onMessageReceived(const char* userId, const IMessage* message) override;
 #pragma endregion
 
