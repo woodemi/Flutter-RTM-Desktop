@@ -38,12 +38,7 @@ class AgoraRtmChannel {
 
   bool _closed;
 
-  StreamSubscription<dynamic> _eventSubscription;
-
-  EventChannel _addEventChannel() {
-    return new EventChannel(
-        'io.agora.rtm.client$_clientIndex.channel$channelId');
-  }
+  BasicMessageChannel messageChannel;
 
   _eventListener(dynamic event) {
     final Map<dynamic, dynamic> map = event;
@@ -65,9 +60,10 @@ class AgoraRtmChannel {
 
   AgoraRtmChannel(this._clientIndex, this.channelId) {
     _closed = false;
-    _eventSubscription = _addEventChannel()
-        .receiveBroadcastStream()
-        .listen(_eventListener, onError: onError);
+    messageChannel = new BasicMessageChannel(
+        'io.agora.rtm.client$_clientIndex.channel$channelId',
+        StandardMessageCodec());
+    messageChannel.setMessageHandler(_eventListener);
   }
 
   Future<dynamic> _callNative(String methodName, dynamic arguments) {
@@ -101,7 +97,7 @@ class AgoraRtmChannel {
 
   Future<void> close() async {
     if (_closed) return null;
-    await _eventSubscription.cancel();
+    messageChannel.setMessageHandler(null);
     _closed = true;
   }
 }
