@@ -40,7 +40,7 @@ class AgoraRtmChannel {
 
   BasicMessageChannel messageChannel;
 
-  _eventListener(dynamic event) {
+  Future<dynamic> _eventListener(dynamic event) async {
     final Map<dynamic, dynamic> map = event;
     switch (map['event']) {
       case 'onMessageReceived':
