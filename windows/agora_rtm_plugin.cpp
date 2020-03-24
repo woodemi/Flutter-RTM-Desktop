@@ -141,7 +141,7 @@ namespace {
         const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result)
     {
         auto clientIndex = params[EncodableValue("clientIndex")].IntValue();
-        auto args = params[EncodableValue("args")].MapValue();
+        auto args = params[EncodableValue("args")].IsNull() ? EncodableMap() : params[EncodableValue("args")].MapValue();
 
         if (agoraClients.count(clientIndex) == 0)
         {
@@ -180,7 +180,7 @@ namespace {
     {
         auto clientIndex = params[EncodableValue("clientIndex")].IntValue();
         auto channelId = params[EncodableValue("channelId")].StringValue();
-        auto args = params[EncodableValue("args")].MapValue();
+        auto args = params[EncodableValue("args")].IsNull() ? EncodableMap() : params[EncodableValue("args")].MapValue();
         auto rtmClient = agoraClients[clientIndex];
 
         if (rtmClient->channels.count(channelId) == 0)
