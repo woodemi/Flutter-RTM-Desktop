@@ -189,6 +189,25 @@ namespace {
 	        });
             result->Success(&ret);
         }
+    	else if ("releaseChannel" == method_name)
+        {
+            auto channelId = args[EncodableValue("channelId")].StringValue();
+            auto rtmChannel = rtmClient->channels[channelId];
+    		if (rtmChannel == nullptr)
+    		{
+                auto ret = EncodableValue(EncodableMap{
+					{EncodableValue("errorCode"), EncodableValue(-1)},
+                });
+                result->Success(&ret);
+                return;
+    		}
+            delete rtmChannel;
+            rtmClient->channels[channelId] = nullptr;
+            auto ret = EncodableValue(EncodableMap{
+		        {EncodableValue("errorCode"), EncodableValue(0)},
+	        });
+            result->Success(&ret);
+        }
         else
             result->NotImplemented();
     }

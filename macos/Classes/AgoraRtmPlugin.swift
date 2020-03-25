@@ -90,6 +90,15 @@ public class AgoraRtmPlugin: NSObject, FlutterPlugin {
       }
       rtmClient.channels[channelId] = rtmChannel
       result(["errorCode": 0])
+    case "releaseChannel":
+      let channelId = args?["channelId"] as! String
+      guard let rtmChannel = rtmClient.channels[channelId] else {
+        result(["errorCode": -1])
+        return
+      }
+      rtmClient.kit.destroyChannel(withId: channelId)
+      rtmClient.channels[channelId] = nil
+      result(["errorCode": 0])
     default:
       result(FlutterMethodNotImplemented)
     }
