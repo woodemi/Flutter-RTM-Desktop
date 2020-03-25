@@ -17,6 +17,10 @@ namespace agora::rtm
 
 	RTMClient::~RTMClient()
 	{
+		for (auto channelPair : channels)
+			delete channelPair.second;
+		channels.clear();
+
 		rtmService->release();
 	}
 
