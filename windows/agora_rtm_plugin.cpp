@@ -155,7 +155,7 @@ namespace {
 
         if ("login" == method_name)
         {
-            auto token = args.count(EncodableValue("token")) > 0 ? args[EncodableValue("token")].StringValue() : "";
+            auto token = args[EncodableValue("token")].IsNull() ? "" : args[EncodableValue("token")].StringValue();
             auto userId = args[EncodableValue("userId")].StringValue();
             auto errorCode = rtmClient->rtmService->login(token.c_str(), userId.c_str());
             auto ret = EncodableValue(EncodableMap{
@@ -168,6 +168,24 @@ namespace {
 	        auto errorCode = rtmClient->rtmService->logout();
 	        auto ret = EncodableValue(EncodableMap{
 		        {EncodableValue("errorCode"), EncodableValue(errorCode)},
+	        });
+            result->Success(&ret);
+        }
+    	else if ("createChannel" == method_name)
+        {
+            auto channelId = args[EncodableValue("channelId")].StringValue();
+            auto rtmChannel = new RTMChannel(clientIndex, channelId, registrar->messenger(), rtmClient->rtmService);
+    		if (rtmChannel == nullptr)
+    		{
+                auto ret = EncodableValue(EncodableMap{
+					{EncodableValue("errorCode"), EncodableValue(-1)},
+                });
+                result->Success(&ret);
+                return;
+    		}
+            rtmClient->channels[channelId] = rtmChannel;
+            auto ret = EncodableValue(EncodableMap{
+		        {EncodableValue("errorCode"), EncodableValue(0)},
 	        });
             result->Success(&ret);
         }
