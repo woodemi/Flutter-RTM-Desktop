@@ -12,11 +12,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: subosito/flutter-action@v1
+      - uses: subosito/flutter-action@v1.3.0
         with:
           channel: 'beta'
       - run: |
-          cd /Users/runner/hostedtoolcache/flutter/1.15.17-beta/x64
+          cd /Users/runner/hostedtoolcache/flutter/1.17.0-3.3.pre-beta/x64
           git clean -xdf; git checkout -b dev beta;
           flutter config --enable-macos-desktop
           cd -
@@ -26,12 +26,16 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: subosito/flutter-action@v1
+      - uses: subosito/flutter-action@v1.3.0
         with:
           channel: 'beta'
       - run: |
-          cd C:\hostedtoolcache\windows\flutter\1.15.17-beta\x64
+          cd C:\hostedtoolcache\windows\flutter\1.17.0-3.3.pre-beta\x64
           git clean -xdf; git fetch; git checkout -b master
           flutter config --enable-windows-desktop
           cd -
+      - run: cd example; flutter packages get && flutter build windows
+        continue-on-error: true
+      - uses: warrenbuckley/Setup-Nuget@v1
+      - run: cd example\windows; nuget restore; cd -
       - run: cd example; flutter packages get; flutter build windows -v
