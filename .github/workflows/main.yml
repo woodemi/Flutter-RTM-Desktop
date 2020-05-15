@@ -16,7 +16,7 @@ jobs:
         with:
           channel: 'beta'
       - run: |
-          cd /Users/runner/hostedtoolcache/flutter/1.17.0-3.3.pre-beta/x64
+          cd /Users/runner/hostedtoolcache/flutter/1.18.0-11.1.pre-beta/x64
           git clean -xdf; git checkout -b dev beta;
           flutter config --enable-macos-desktop
           cd -
@@ -30,7 +30,7 @@ jobs:
         with:
           channel: 'beta'
       - run: |
-          cd C:\hostedtoolcache\windows\flutter\1.17.0-3.3.pre-beta\x64
+          cd C:\hostedtoolcache\windows\flutter\1.18.0-11.1.pre-beta\x64
           git clean -xdf; git fetch; git checkout -b master
           flutter config --enable-windows-desktop
           cd -
