@@ -14,12 +14,8 @@ jobs:
       - uses: actions/checkout@v1
       - uses: subosito/flutter-action@v1.3.0
         with:
-          channel: 'beta'
-      - run: |
-          cd /Users/runner/hostedtoolcache/flutter/1.18.0-11.1.pre-beta/x64
-          git clean -xdf; git checkout -b dev beta;
-          flutter config --enable-macos-desktop
-          cd -
+          channel: 'dev'
+      - run: flutter config --enable-macos-desktop
       - run: cd example && flutter packages get && flutter build macos -v
 
   build-windows:
@@ -28,9 +24,9 @@ jobs:
       - uses: actions/checkout@v1
       - uses: subosito/flutter-action@v1.3.0
         with:
-          channel: 'beta'
+          channel: 'dev'
       - run: |
-          cd C:\hostedtoolcache\windows\flutter\1.18.0-11.1.pre-beta\x64
+          cd C:\hostedtoolcache\windows\flutter\1.19.0-3.0.pre-dev\x64
           git clean -xdf; git fetch; git checkout -b master
           flutter config --enable-windows-desktop
           cd -
