@@ -4,7 +4,7 @@
 
 #include "generated_plugin_registrant.h"
 
-#include <agora_rtm_plugin.h>
+#include <agora_rtm/agora_rtm_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   AgoraRtmPluginRegisterWithRegistrar(

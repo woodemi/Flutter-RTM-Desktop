@@ -1,20 +1,10 @@
-// Copyright 2019 Google LLC
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-#include "agora_rtm_plugin.h"
+#include "include/agora_rtm/agora_rtm_plugin.h"
 
-// This must be included before VersionHelpers.h.
+// This must be included before many other Windows headers.
 #include <windows.h>
+
+// For getPlatformVersion; remove unless needed for your plugin implementation.
+#include <VersionHelpers.h>
 
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
@@ -22,256 +12,77 @@
 
 #include <map>
 #include <memory>
-
-#include "RTMClient.h"
-
-using namespace agora::rtm;
+#include <sstream>
 
 namespace {
-    using flutter::EncodableMap;
-    using flutter::EncodableValue;
 
-    class AgoraRtmPlugin : public flutter::Plugin
-    {
-    public:
-        static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar);
+class AgoraRtmPlugin : public flutter::Plugin {
+ public:
+  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar);
 
-        AgoraRtmPlugin(flutter::PluginRegistrarWindows* registrar);
+  AgoraRtmPlugin();
 
-        virtual ~AgoraRtmPlugin();
+  virtual ~AgoraRtmPlugin();
 
-    private:
-        // Called when a method is called on this plugin's channel from Dart.
-        void HandleMethodCall(
-            const flutter::MethodCall<flutter::EncodableValue>& method_call,
-            std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+ private:
+  // Called when a method is called on this plugin's channel from Dart.
+  void HandleMethodCall(
+      const flutter::MethodCall<flutter::EncodableValue> &method_call,
+      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+};
 
-        flutter::PluginRegistrarWindows* registrar;
+// static
+void AgoraRtmPlugin::RegisterWithRegistrar(
+    flutter::PluginRegistrarWindows *registrar) {
+  auto channel =
+      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          registrar->messenger(), "agora_rtm",
+          &flutter::StandardMethodCodec::GetInstance());
 
-        long nextClientIndex{ 0 };
-        std::map<long, RTMClient*> agoraClients{};
+  auto plugin = std::make_unique<AgoraRtmPlugin>();
 
-        void HandleStaticMethod(const std::string& method_name, EncodableMap& params,
-            const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result);
-        void HandleAgoraRtmClientMethod(const std::string& method_name, EncodableMap& params,
-            const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result);
-        void HandleAgoraRtmChannelMethod(const std::string& method_name, EncodableMap& params,
-            const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result);
-    };
+  channel->SetMethodCallHandler(
+      [plugin_pointer = plugin.get()](const auto &call, auto result) {
+        plugin_pointer->HandleMethodCall(call, std::move(result));
+      });
 
-    // static
-    void AgoraRtmPlugin::RegisterWithRegistrar(
-        flutter::PluginRegistrarWindows* registrar)
-    {
-        auto plugin = std::make_unique<AgoraRtmPlugin>(registrar);
+  registrar->AddPlugin(std::move(plugin));
+}
 
-        auto channel =
-            std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-                registrar->messenger(), "io.agora.rtm",
-                &flutter::StandardMethodCodec::GetInstance());
+AgoraRtmPlugin::AgoraRtmPlugin() {}
 
-        channel->SetMethodCallHandler(
-            [plugin_pointer = plugin.get()](const auto& call, auto result) {
-            plugin_pointer->HandleMethodCall(call, std::move(result));
-        });
+AgoraRtmPlugin::~AgoraRtmPlugin() {}
 
-        registrar->AddPlugin(std::move(plugin));
+void AgoraRtmPlugin::HandleMethodCall(
+    const flutter::MethodCall<flutter::EncodableValue> &method_call,
+    std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+  // Replace "getPlatformVersion" check with your plugin's method.
+  // See:
+  // https://github.com/flutter/engine/tree/master/shell/platform/common/cpp/client_wrapper/include/flutter
+  // and
+  // https://github.com/flutter/engine/tree/master/shell/platform/glfw/client_wrapper/include/flutter
+  // for the relevant Flutter APIs.
+  if (method_call.method_name().compare("getPlatformVersion") == 0) {
+    std::ostringstream version_stream;
+    version_stream << "Windows ";
+    if (IsWindows10OrGreater()) {
+      version_stream << "10+";
+    } else if (IsWindows8OrGreater()) {
+      version_stream << "8";
+    } else if (IsWindows7OrGreater()) {
+      version_stream << "7";
     }
+    result->Success(flutter::EncodableValue(version_stream.str()));
+  } else {
+    result->NotImplemented();
+  }
+}
 
-    AgoraRtmPlugin::AgoraRtmPlugin(flutter::PluginRegistrarWindows* registrar) : registrar(registrar) {}
-
-    AgoraRtmPlugin::~AgoraRtmPlugin()
-    {
-        for (auto clientPair : agoraClients)
-            delete clientPair.second;
-        agoraClients.clear();
-    }
-
-    void AgoraRtmPlugin::HandleMethodCall(
-        const flutter::MethodCall<flutter::EncodableValue>& method_call,
-        std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result)
-    {
-        auto methodName = method_call.method_name();
-        auto arguments = method_call.arguments()->MapValue();
-        auto callType = arguments[EncodableValue("call")].StringValue();
-        auto params = arguments[EncodableValue("params")].MapValue();
-
-        if ("static" == callType)
-            HandleStaticMethod(methodName, params, result);
-    	else if ("AgoraRtmClient" == callType)
-            HandleAgoraRtmClientMethod(methodName, params, result);
-        else if ("AgoraRtmChannel" == callType)
-            HandleAgoraRtmChannelMethod(methodName, params, result);
-        else
-            result->NotImplemented();
-    }
-
-    void AgoraRtmPlugin::HandleStaticMethod(const std::string& method_name, EncodableMap& params,
-        const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result)
-    {
-        if ("createInstance" == method_name)
-        {
-            if (params.count(EncodableValue("appId")) == 0)
-            {
-	            auto ret = EncodableValue(EncodableMap{
-		            {EncodableValue("errorCode"), EncodableValue(-1)},
-	            });
-                result->Success(&ret);
-                return;
-            }
-            auto appId = params[EncodableValue("appId")].StringValue();
-
-            while (agoraClients.count(nextClientIndex) > 0)
-                nextClientIndex++;
-
-            auto rtmClient = new RTMClient(appId, nextClientIndex, registrar->messenger());
-            auto ret = EncodableValue(EncodableMap{
-	            {EncodableValue("errorCode"), EncodableValue(0)},
-	            {EncodableValue("index"), EncodableValue(nextClientIndex)},
-            });
-            result->Success(&ret);
-            agoraClients[nextClientIndex] = rtmClient;
-            nextClientIndex++;
-        }
-        else
-            result->NotImplemented();
-    }
-
-    void AgoraRtmPlugin::HandleAgoraRtmClientMethod(const std::string& method_name, EncodableMap& params,
-        const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result)
-    {
-        auto clientIndex = params[EncodableValue("clientIndex")].IntValue();
-        auto args = params[EncodableValue("args")].IsNull() ? EncodableMap() : params[EncodableValue("args")].MapValue();
-
-        if (agoraClients.count(clientIndex) == 0)
-        {
-	        auto ret = EncodableValue(EncodableMap{
-		        {EncodableValue("errorCode"), EncodableValue(-1)},
-	        });
-            result->Success(&ret);
-            return;
-        }
-        auto rtmClient = agoraClients[clientIndex];
-
-        if ("login" == method_name)
-        {
-            auto token = args[EncodableValue("token")].IsNull() ? "" : args[EncodableValue("token")].StringValue();
-            auto userId = args[EncodableValue("userId")].StringValue();
-            auto errorCode = rtmClient->rtmService->login(token.c_str(), userId.c_str());
-            auto ret = EncodableValue(EncodableMap{
-	            {EncodableValue("errorCode"), EncodableValue(errorCode)},
-            });
-            result->Success(&ret);
-        }
-        else if ("logout" == method_name)
-        {
-	        auto errorCode = rtmClient->rtmService->logout();
-	        auto ret = EncodableValue(EncodableMap{
-		        {EncodableValue("errorCode"), EncodableValue(errorCode)},
-	        });
-            result->Success(&ret);
-        }
-    	else if ("createChannel" == method_name)
-        {
-            auto channelId = args[EncodableValue("channelId")].StringValue();
-            auto rtmChannel = new RTMChannel(clientIndex, channelId, registrar->messenger(), rtmClient->rtmService);
-    		if (rtmChannel == nullptr)
-    		{
-                auto ret = EncodableValue(EncodableMap{
-					{EncodableValue("errorCode"), EncodableValue(-1)},
-                });
-                result->Success(&ret);
-                return;
-    		}
-            rtmClient->channels[channelId] = rtmChannel;
-            auto ret = EncodableValue(EncodableMap{
-		        {EncodableValue("errorCode"), EncodableValue(0)},
-	        });
-            result->Success(&ret);
-        }
-    	else if ("releaseChannel" == method_name)
-        {
-            auto channelId = args[EncodableValue("channelId")].StringValue();
-            auto rtmChannel = rtmClient->channels[channelId];
-    		if (rtmChannel == nullptr)
-    		{
-                auto ret = EncodableValue(EncodableMap{
-					{EncodableValue("errorCode"), EncodableValue(-1)},
-                });
-                result->Success(&ret);
-                return;
-    		}
-            delete rtmChannel;
-            rtmClient->channels[channelId] = nullptr;
-            auto ret = EncodableValue(EncodableMap{
-		        {EncodableValue("errorCode"), EncodableValue(0)},
-	        });
-            result->Success(&ret);
-        }
-        else
-            result->NotImplemented();
-    }
-
-    void AgoraRtmPlugin::HandleAgoraRtmChannelMethod(const std::string& method_name, EncodableMap& params,
-        const std::unique_ptr<flutter::MethodResult<EncodableValue>>& result)
-    {
-        auto clientIndex = params[EncodableValue("clientIndex")].IntValue();
-        auto channelId = params[EncodableValue("channelId")].StringValue();
-        auto args = params[EncodableValue("args")].IsNull() ? EncodableMap() : params[EncodableValue("args")].MapValue();
-        auto rtmClient = agoraClients[clientIndex];
-
-        if (rtmClient->channels.count(channelId) == 0)
-        {
-	        auto ret = EncodableValue(EncodableMap{
-		        {EncodableValue("errorCode"), EncodableValue(-1)},
-	        });
-            result->Success(&ret);
-        }
-        auto rtmChannel = rtmClient->channels[channelId];
-
-        if ("join" == method_name)
-        {
-	        auto errorCode = rtmChannel->channel->join();
-            auto ret = EncodableValue(EncodableMap{
-                {EncodableValue("errorCode"), EncodableValue(errorCode)},
-            });
-            result->Success(&ret);
-        }
-        else if ("sendMessage" == method_name)
-        {
-            auto message = args[EncodableValue("message")].StringValue();
-            auto rtmMessage = rtmClient->rtmService->createMessage();
-            rtmMessage->setText(message.c_str());
-            auto errorCode = rtmChannel->channel->sendMessage(rtmMessage);
-            rtmMessage->release();
-            auto ret = EncodableValue(EncodableMap{
-                {EncodableValue("errorCode"), EncodableValue(errorCode)},
-            });
-            result->Success(&ret);
-        }
-        else if ("leave" == method_name)
-        {
-	        auto errorCode = rtmChannel->channel->leave();
-            auto ret = EncodableValue(EncodableMap{
-                {EncodableValue("errorCode"), EncodableValue(errorCode)},
-            });
-            result->Success(&ret);
-        }
-        else
-            result->NotImplemented();
-    }
 }  // namespace
 
 void AgoraRtmPluginRegisterWithRegistrar(
-    FlutterDesktopPluginRegistrarRef registrar)
-{
-    // The plugin registrar wrappers owns the plugins, registered callbacks, etc.,
-    // so must remain valid for the life of the application.
-    static auto* plugin_registrars =
-        new std::map<FlutterDesktopPluginRegistrarRef,
-        std::unique_ptr<flutter::PluginRegistrarWindows>>;
-    auto insert_result = plugin_registrars->emplace(
-        registrar, std::make_unique<flutter::PluginRegistrarWindows>(registrar));
-
-    AgoraRtmPlugin::RegisterWithRegistrar(insert_result.first->second.get());
+    FlutterDesktopPluginRegistrarRef registrar) {
+  AgoraRtmPlugin::RegisterWithRegistrar(
+      flutter::PluginRegistrarManager::GetInstance()
+          ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
 }
