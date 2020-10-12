@@ -11,7 +11,7 @@ namespace agora::rtm
 	using flutter::EncodableValue;
 	using flutter::EncodableMap;
 
-	class RTMClient : IRtmServiceEventHandler
+	class RTMClient: IRtmServiceEventHandler
 	{
 	public:
 		RTMClient(const std::string& app_id, long client_index, flutter::BinaryMessenger* messenger);

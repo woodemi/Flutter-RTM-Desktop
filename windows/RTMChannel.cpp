@@ -1,4 +1,4 @@
-#include "RTMChannel.h"
+#include "include/agora_rtm/RTMChannel.h"
 
 #include <flutter/standard_message_codec.h>
 
